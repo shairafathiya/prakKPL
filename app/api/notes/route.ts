@@ -1,52 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAllNotes, createNote } from "@/lib/db";
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma"; // Adjust this path if your instance file is named differently
 
-// GET /api/notes — Fetch all notes
+// 1. GET /api/notes - Fetch all notes
 export async function GET() {
-  const notes = getAllNotes();
-  return NextResponse.json(
-    {
-      success: true,
-      count: notes.length,
-      data: notes,
-    },
-    { status: 200 }
-  );
+  try {
+    const notes = await prisma.note.findMany({
+      orderBy: { updatedAt: "desc" }, // Fresh notes first
+    });
+    return NextResponse.json({ data: notes });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to fetch notes" }, { status: 500 });
+  }
 }
 
-// POST /api/notes — Create a new note
-export async function POST(request: NextRequest) {
+// 2. POST /api/notes - Create a note
+export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { title, content, color } = body;
 
-    if (!title || typeof title !== "string" || title.trim() === "") {
-      return NextResponse.json(
-        { success: false, error: "Title is required" },
-        { status: 400 }
-      );
-    }
-    if (!content || typeof content !== "string" || content.trim() === "") {
-      return NextResponse.json(
-        { success: false, error: "Content is required" },
-        { status: 400 }
-      );
+    if (!title || !content) {
+      return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
     }
 
-    const note = createNote({
-      title: title.trim(),
-      content: content.trim(),
-      color: color || "#FFFFFF",
+    const newNote = await prisma.note.create({
+      data: {
+        title,
+        content,
+        color: color || "#FFFFFF",
+      },
     });
 
-    return NextResponse.json({ success: true, data: note }, { status: 201 });
-  } catch {
-    return NextResponse.json(
-      { success: false, error: "Invalid JSON body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ data: newNote }, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to create note" }, { status: 500 });
   }
-
-
-  
 }

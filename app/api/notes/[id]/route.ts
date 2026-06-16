@@ -1,63 +1,46 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getNoteById, updateNote, deleteNote } from "@/lib/db";
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-type Params = { params: Promise<{ id: string }> };
-
-// GET /api/notes/:id — Fetch a single note
-export async function GET(_req: NextRequest, { params }: Params) {
-  const { id } = await params;
-  const note = getNoteById(id);
-  if (!note) {
-    return NextResponse.json(
-      { success: false, error: `Note with id "${id}" not found` },
-      { status: 404 }
-    );
-  }
-  return NextResponse.json({ success: true, data: note }, { status: 200 });
+interface RouteParams {
+  params: { id: string };
 }
 
-// PUT /api/notes/:id — Update a note
-export async function PUT(request: NextRequest, { params }: Params) {
-  const { id } = await params;
+// 1. PUT /api/notes/:id - Update an existing note
+export async function PUT(request: Request, { params }: RouteParams) {
   try {
+    const noteId = Number(params.id);
+    if (Number.isNaN(noteId)) {
+      return NextResponse.json({ error: "Invalid note id" }, { status: 400 });
+    }
+
     const body = await request.json();
     const { title, content, color } = body;
 
-    const existing = getNoteById(id);
-    if (!existing) {
-      return NextResponse.json(
-        { success: false, error: `Note with id "${id}" not found` },
-        { status: 404 }
-      );
-    }
-
-    const updated = updateNote(id, {
-      ...(title !== undefined && { title: String(title).trim() }),
-      ...(content !== undefined && { content: String(content).trim() }),
-      ...(color !== undefined && { color }),
+    const updatedNote = await prisma.note.update({
+      where: { id: noteId },
+      data: { title, content, color },
     });
 
-    return NextResponse.json({ success: true, data: updated }, { status: 200 });
-  } catch {
-    return NextResponse.json(
-      { success: false, error: "Invalid JSON body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ data: updatedNote });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to update note" }, { status: 500 });
   }
 }
 
-// DELETE /api/notes/:id — Delete a note
-export async function DELETE(_req: NextRequest, { params }: Params) {
-  const { id } = await params;
-  const deleted = deleteNote(id);
-  if (!deleted) {
-    return NextResponse.json(
-      { success: false, error: `Note with id "${id}" not found` },
-      { status: 404 }
-    );
+// 2. DELETE /api/notes/:id - Permanently delete a note
+export async function DELETE(request: Request, { params }: RouteParams) {
+  try {
+    const noteId = Number(params.id);
+    if (Number.isNaN(noteId)) {
+      return NextResponse.json({ error: "Invalid note id" }, { status: 400 });
+    }
+
+    await prisma.note.delete({
+      where: { id: noteId },
+    });
+
+    return NextResponse.json({ message: "Note deleted successfully" });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to delete note" }, { status: 500 });
   }
-  return NextResponse.json(
-    { success: true, message: `Note "${id}" deleted successfully` },
-    { status: 200 }
-  );
 }

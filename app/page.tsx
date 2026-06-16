@@ -3,23 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Note, CreateNoteDto, UpdateNoteDto } from "@/types/note";
 
-import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
 
-// export default async function Page() {
-//   const cookieStore = await cookies()
-//   const supabase = createClient(cookieStore)
 
-//   const { data: todos } = await supabase.from('todos').select()
-
-//   return (
-//     <ul>
-//       {todos?.map((todo) => (
-//         <li key={todo.id}>{todo.name}</li>
-//       ))}
-//     </ul>
-//   )
-// }
 
 const NOTE_COLORS = [
   "#FFFFFF", "#FFF9C4", "#C8E6C9", "#BBDEFB",
@@ -221,6 +206,9 @@ function ApiPanel({ onClose }: { onClose: () => void }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function HomePage() {
+
+
+  
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [editNote, setEditNote] = useState<Note | null | "new">(null);
