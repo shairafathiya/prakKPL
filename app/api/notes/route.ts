@@ -1,38 +1,57 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma"; // Adjust this path if your instance file is named differently
+import { supabase } from "@/lib/supabaseClient"; 
 
-// 1. GET /api/notes - Fetch all notes
 export async function GET() {
   try {
-    const notes = await prisma.note.findMany({
-      orderBy: { updatedAt: "desc" }, // Fresh notes first
-    });
-    return NextResponse.json({ data: notes });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch notes" }, { status: 500 });
+    const { data, error } = await supabase
+      .from("Note")
+      .select("*")
+      .order("updatedAt", { ascending: false });
+
+    if (error) throw error;
+    return NextResponse.json({ data: data || [] }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// 2. POST /api/notes - Create a note
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { title, content, color } = body;
 
-    if (!title || !content) {
+    if (!title?.trim() || !content?.trim()) {
       return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
     }
 
-    const newNote = await prisma.note.create({
-      data: {
-        title,
-        content,
-        color: color || "#FFFFFF",
-      },
-    });
+    // 🔍 Force clean payload mapping
+    const payload = {
+      title: title.trim(),
+      content: content.trim(),
+      color: color || "#FFFFFF",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-    return NextResponse.json({ data: newNote }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create note" }, { status: 500 });
+    const { data, error } = await supabase
+      .from("Note")
+      .insert([payload])
+      .select()
+      .single();
+
+    // If Supabase rejects the insert, this sends the exact Postgres error message to the frontend
+    if (error) {
+      console.error("Supabase Database Error:", error);
+      return NextResponse.json({ error: `Supabase Error: ${error.message} (${error.details || 'No details'})` }, { status: 400 });
+    }
+
+    return NextResponse.json({ data }, { status: 201 });
+
+  } catch (error: any) {
+    console.error("Server Crash Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal Server Crash" },
+      { status: 500 }
+    );
   }
 }

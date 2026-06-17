@@ -3,9 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Note, CreateNoteDto, UpdateNoteDto } from "@/types/note";
 
-
-
-
 const NOTE_COLORS = [
   "#FFFFFF", "#FFF9C4", "#C8E6C9", "#BBDEFB",
   "#F8BBD0", "#E1BEE7", "#FFE0B2", "#D7CCC8",
@@ -56,6 +53,29 @@ function NoteModal({
       setSaving(false);
     }
   };
+  const handleCreate = async (dto: CreateNoteDto | UpdateNoteDto) => {
+  // 👇 Force absolute path to guarantee it talks to your local server port
+  const res = await fetch("http://localhost:3000/api/notes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(dto),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = "Failed to create note";
+    try {
+      const errJson = JSON.parse(errorText);
+      errorMessage = errJson.error || errorMessage;
+    } catch {
+      errorMessage = errorText.slice(0, 150); 
+    }
+    throw new Error(errorMessage);
+  }
+  
+  await fetchNotes();
+  showToast("Note created!");
+};
 
   return (
     <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -206,9 +226,6 @@ function ApiPanel({ onClose }: { onClose: () => void }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function HomePage() {
-
-
-  
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [editNote, setEditNote] = useState<Note | null | "new">(null);
@@ -381,3 +398,11 @@ export default function HomePage() {
     </>
   );
 }
+
+function fetchNotes() {
+  throw new Error("Function not implemented.");
+}
+function showToast(arg0: string) {
+  throw new Error("Function not implemented.");
+}
+
