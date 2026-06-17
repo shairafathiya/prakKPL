@@ -1,5 +1,5 @@
 # 📓 Notebook — Next.js CRUD App with REST API
-
+THIS project IS used for assigment purpose
 A full-stack notebook app built with Next.js 15 App Router. Create, read, update, and delete notes through both the web UI and a REST API (Postman-friendly).
 
 ---
@@ -98,7 +98,8 @@ Use any hex color for the `color` field. Suggested palette:
 - **Next.js 15** App Router
 - **TypeScript**
 - **Tailwind CSS**
-- **In-memory store** (data resets on server restart — swap `lib/db.ts` for a real DB)
+- **Prisma ORM
+- **SUpabase 
 
 ---
 
